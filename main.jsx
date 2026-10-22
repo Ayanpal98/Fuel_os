@@ -40,7 +40,6 @@ const money = n => '₹' + Number(n).toLocaleString('en-IN');
 function App() {
   const [active, setActive] = useState('Overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [range, setRange] = useState('Last 7 days');
   const [query, setQuery] = useState('');
   const [showAlerts, setShowAlerts] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
@@ -48,7 +47,6 @@ function App() {
   const [toast, setToast] = useState('');
   const [shifts, setShifts] = useState(initialShifts);
   const [fuelType, setFuelType] = useState('All fuel');
-  const [showAll, setShowAll] = useState(false);
 
   const notify = message => { setToast(message); window.setTimeout(() => setToast(''), 2600); };
   const filteredShifts = useMemo(() => shifts.filter(s =>
@@ -56,12 +54,72 @@ function App() {
   ), [shifts, query]);
 
   function exportCsv() {
-    const rows = [['Shift ID','Staff','Assignment','Time','Sales','Status'], ...shifts.map(s => [s.id,s.person,s.nozzle,s.time,s.sales,s.status])];
-    const csv = rows.map(row => row.map(v => `"${String(v).replaceAll('"','""')}"`).join(',')).join('\n');
-    const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-    const url = URL.createObjectURL(blob); const a = document.createElement('a');
-    a.href = url; a.download = 'atsfy-fuelos-demo-shifts.csv'; a.click(); URL.revokeObjectURL(url);
-    notify('Demo shift report exported');
+    const transactions = [
+      ['TX-10082','14:32','Petrol','24.6 L','UPI','₹ 2,460'],
+      ['TX-10081','14:25','Diesel','31.2 L','Cash','₹ 2,980'],
+      ['TX-10080','14:18','Petrol','18.0 L','Card','₹ 1,800'],
+      ['TX-10079','14:04','Diesel','42.5 L','UPI','₹ 4,050'],
+      ['TX-10078','13:52','Petrol','12.4 L','Cash','₹ 1,240'],
+      ['TX-10077','13:46','Diesel','27.8 L','Credit','₹ 2,650']
+    ];
+    const tanks = [
+      ['TK-001','Petrol tank 01','8,240 L','12,000 L','68.7%'],
+      ['TK-002','Diesel tank 02','6,180 L','10,000 L','61.8%'],
+      ['TK-003','Petrol tank 03','4,000 L','8,000 L','50%']
+    ];
+    const expenses = [
+      ['EX-021','Utilities','Electricity estimate','Station Owner','₹ 3,200'],
+      ['EX-020','Maintenance','Equipment service sample','Station Owner','₹ 2,500'],
+      ['EX-019','Supplies','Cleaning and station supplies','Shift supervisor','₹ 1,450'],
+      ['EX-018','Other','Miscellaneous sample expense','Station Owner','₹ 1,300']
+    ];
+    let headers = ['Shift ID','Staff','Assignment','Time','Sales','Status'];
+    let data = shifts.map(s => [s.id,s.person,s.nozzle,s.time,s.sales,s.status]);
+    let filename = 'atsfy-fuelos-demo-shifts.csv';
+    if (active === 'Sales & transactions') {
+      headers = ['Reference','Time','Fuel type','Volume','Payment','Amount','Status'];
+      data = transactions.filter(r => fuelType === 'All fuel' || r[2] === fuelType).map(r => [...r,'Recorded']);
+      filename = 'atsfy-fuelos-demo-transactions.csv';
+    } else if (active === 'Tank & nozzle stock') {
+      headers = ['Tank ID','Tank','Recorded stock','Capacity','Fill level'];
+      data = tanks;
+      filename = 'atsfy-fuelos-demo-tank-stock.csv';
+    } else if (active === 'Expenses & credit') {
+      headers = ['Reference','Category','Description','Recorded by','Amount'];
+      data = expenses;
+      filename = 'atsfy-fuelos-demo-expenses.csv';
+    } else if (active === 'Staff') {
+      headers = ['Staff member','Initials','Role','Shift','Status'];
+      data = [
+        ['Rakesh Debbarma','RD','Attendant','Morning shift','On duty'],
+        ['Milan Saha','MS','Attendant','Morning shift','On duty'],
+        ['Bikash Reang','BR','Shift supervisor','Evening shift','On duty'],
+        ['Ananya Das','AD','Attendant','Evening shift','On duty'],
+        ['Suman Paul','SP','Cashier','General','Available'],
+        ['Mampi Jamatia','MJ','Attendant','General','Available']
+      ];
+      filename = 'atsfy-fuelos-demo-staff.csv';
+    } else if (active === 'Overview') {
+      headers = ['Metric','Illustrative value','Notes'];
+      data = [
+        ['Total sales today','₹ 1,84,620','Demo data'],
+        ['Fuel dispensed','3,248.6 L','Demo data'],
+        ['Estimated gross margin','₹ 12,840','Illustrative estimate'],
+        ['Stock variance','0.42%','Review sample threshold 0.30%']
+      ];
+      filename = 'atsfy-fuelos-demo-overview.csv';
+    }
+    const csv = [headers, ...data].map(row => row.map(v => \`"\${String(v).replaceAll('"','""')}"\`).join(',')).join('\r\n');
+    const blob = new Blob(['\uFEFF', csv], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    notify(\`Demo \${active.toLowerCase()} export prepared\`);
   }
 
   function addShift(e) {
@@ -135,7 +193,7 @@ function App() {
           <div className="heading-actions"><button className="button secondary" onClick={exportCsv}><Download size={16}/> Export report</button><button className="button primary" onClick={() => setShowNewShift(true)}><Plus size={17}/> New shift</button></div>
         </div>
 
-        {active === 'Overview' ? <Overview range={range} setRange={setRange} notify={notify} setActive={setActive} shifts={shifts} setShowAll={setShowAll} /> :
+        {active === 'Overview' ? <Overview notify={notify} setActive={setActive} shifts={shifts} /> :
           <GenericPage active={active} query={query} setQuery={setQuery} filteredShifts={filteredShifts} fuelType={fuelType} setFuelType={setFuelType} notify={notify} exportCsv={exportCsv} />}
       </div>
       <footer className="footer"><span>© 2026 ATSFY Technologies</span><span><span className="footer-dot"/> Frontend preview · Sample data only</span><button onClick={() => notify('Support contact can be configured before launch')}><CircleHelp size={14}/> Help & support</button></footer>
@@ -149,7 +207,7 @@ function App() {
   </div>;
 }
 
-function Overview({range,setRange,notify,setActive,shifts,setShowAll}) {
+function Overview({notify,setActive,shifts}) {
   const metrics = [
     {label:'Total sales today',value:'₹ 1,84,620',delta:'+8.4%',note:'vs. previous day',icon:Wallet,tone:'green',up:true},
     {label:'Fuel dispensed',value:'3,248.6 L',delta:'+5.2%',note:'vs. previous day',icon:Fuel,tone:'gold',up:true},
@@ -157,6 +215,14 @@ function Overview({range,setRange,notify,setActive,shifts,setShowAll}) {
     {label:'Stock variance',value:'0.42%',delta:'Review',note:'sample threshold: 0.30%',icon:Activity,tone:'rose',up:false}
   ];
   const [period,setPeriod] = useState('7 days');
+  const dayCount = Number.parseInt(period, 10);
+  const chartData = Array.from({length: dayCount}, (_, i) => {
+    const sample = dailySales[i % dailySales.length];
+    return { day: dayCount === 7 ? sample.day : \`D\${i + 1}\`, petrol: sample.petrol, diesel: sample.diesel };
+  });
+  const petrolTotal = chartData.reduce((sum, day) => sum + day.petrol, 0);
+  const dieselTotal = chartData.reduce((sum, day) => sum + day.diesel, 0);
+  const formatLakhs = value => \`₹ \${(value / 100).toFixed(2)}L\`;
   return <>
     <div className="metric-grid">{metrics.map((m,i)=><div className="metric-card" key={m.label}>
       <div className="metric-top"><span>{m.label}</span><div className={`metric-icon ${m.tone}`}><m.icon size={18}/></div></div>
@@ -168,8 +234,8 @@ function Overview({range,setRange,notify,setActive,shifts,setShowAll}) {
     <div className="content-grid">
       <section className="panel sales-panel">
         <div className="panel-heading"><div><h2>Sales performance</h2><p>Daily sales by fuel type · illustrative data</p></div><div className="select-wrap"><CalendarDays size={15}/><select value={period} onChange={e=>setPeriod(e.target.value)}><option>7 days</option><option>14 days</option><option>30 days</option></select><ChevronDown size={13}/></div></div>
-        <div className="chart-legend"><span><i className="legend-petrol"/> Petrol <strong>₹ 2.87L</strong></span><span><i className="legend-diesel"/> Diesel <strong>₹ 2.13L</strong></span><span className="chart-total">₹ 5.00L <small>total</small></span></div>
-        <div className="sales-chart"><ResponsiveContainer width="100%" height="100%"><AreaChart data={period==='7 days'?dailySales:[...dailySales,...dailySales].slice(0,period==='14 days'?14:7)} margin={{top:8,right:8,left:-18,bottom:0}}><defs><linearGradient id="petrolFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#2f7254" stopOpacity={0.17}/><stop offset="100%" stopColor="#2f7254" stopOpacity={0}/></linearGradient><linearGradient id="dieselFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#d5a449" stopOpacity={0.16}/><stop offset="100%" stopColor="#d5a449" stopOpacity={0}/></linearGradient></defs><CartesianGrid strokeDasharray="3 4" vertical={false} stroke="#e9eee9"/><XAxis dataKey="day" axisLine={false} tickLine={false} tick={{fill:'#8a958d',fontSize:11}} dy={9}/><YAxis axisLine={false} tickLine={false} tick={{fill:'#8a958d',fontSize:11}} tickFormatter={v=>`₹${v}k`}/><Tooltip contentStyle={{border:'1px solid #e4e9e4',borderRadius:12,fontSize:12,boxShadow:'0 8px 24px #172f1c12'}} formatter={(v,n)=>[`₹${v}k`,n==='petrol'?'Petrol':'Diesel']}/><Area type="monotone" dataKey="petrol" stroke="#2f7254" strokeWidth={2.4} fill="url(#petrolFill)"/><Area type="monotone" dataKey="diesel" stroke="#d5a449" strokeWidth={2.2} fill="url(#dieselFill)"/></AreaChart></ResponsiveContainer></div>
+        <div className="chart-legend"><span><i className="legend-petrol"/> Petrol <strong>{formatLakhs(petrolTotal)}</strong></span><span><i className="legend-diesel"/> Diesel <strong>{formatLakhs(dieselTotal)}</strong></span><span className="chart-total">{formatLakhs(petrolTotal + dieselTotal)} <small>total</small></span></div>
+        <div className="sales-chart"><ResponsiveContainer width="100%" height="100%"><AreaChart data={chartData} margin={{top:8,right:8,left:-18,bottom:0}}><defs><linearGradient id="petrolFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#2f7254" stopOpacity={0.17}/><stop offset="100%" stopColor="#2f7254" stopOpacity={0}/></linearGradient><linearGradient id="dieselFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#d5a449" stopOpacity={0.16}/><stop offset="100%" stopColor="#d5a449" stopOpacity={0}/></linearGradient></defs><CartesianGrid strokeDasharray="3 4" vertical={false} stroke="#e9eee9"/><XAxis dataKey="day" axisLine={false} tickLine={false} tick={{fill:'#8a958d',fontSize:11}} dy={9}/><YAxis axisLine={false} tickLine={false} tick={{fill:'#8a958d',fontSize:11}} tickFormatter={v=>`₹${v}k`}/><Tooltip contentStyle={{border:'1px solid #e4e9e4',borderRadius:12,fontSize:12,boxShadow:'0 8px 24px #172f1c12'}} formatter={(v,n)=>[`₹${v}k`,n==='petrol'?'Petrol':'Diesel']}/><Area type="monotone" dataKey="petrol" stroke="#2f7254" strokeWidth={2.4} fill="url(#petrolFill)"/><Area type="monotone" dataKey="diesel" stroke="#d5a449" strokeWidth={2.2} fill="url(#dieselFill)"/></AreaChart></ResponsiveContainer></div>
         <div className="chart-foot"><span><span className="live-dot"/> Sample data preview</span><button onClick={()=>notify('Detailed analytics will be added in a later phase')}>View analytics <ChevronRight size={14}/></button></div>
       </section>
 
@@ -187,7 +253,7 @@ function Overview({range,setRange,notify,setActive,shifts,setShowAll}) {
 
     <div className="lower-grid">
       <section className="panel shifts-panel">
-        <div className="panel-heading"><div><h2>Shift activity</h2><p>Staff assignments and current status</p></div><button className="text-action" onClick={()=>{setActive('Shift management');setShowAll(true)}}>View all <ChevronRight size={14}/></button></div>
+        <div className="panel-heading"><div><h2>Shift activity</h2><p>Staff assignments and current status</p></div><button className="text-action" onClick={()=>setActive('Shift management')}>View all <ChevronRight size={14}/></button></div>
         <div className="table-scroll"><table><thead><tr><th>STAFF MEMBER</th><th>ASSIGNMENT</th><th>SHIFT TIME</th><th>SALES</th><th>STATUS</th></tr></thead><tbody>{shifts.slice(0,4).map(s=><tr key={s.id}><td><div className="staff-cell"><div className="staff-avatar">{s.initials}</div><div><strong>{s.person}</strong><small>{s.id}</small></div></div></td><td>{s.nozzle}</td><td>{s.time}</td><td className="sales-cell">{s.sales}</td><td><span className={`status-badge ${s.status==='Closed'?'closed':'progress'}`}><i/>{s.status}</span></td></tr>)}</tbody></table></div>
         <div className="table-foot"><span>Showing {Math.min(4,shifts.length)} of {shifts.length} sample shifts</span><button onClick={()=>setActive('Shift management')}>Open shift manager <ChevronRight size={14}/></button></div>
       </section>
@@ -216,7 +282,7 @@ function GenericPage({active,query,setQuery,filteredShifts,fuelType,setFuelType,
   const [searchTerm,setSearchTerm] = useState('');
   if(active==='Shift management') return <><div className="section-stats"><MiniStat label="Total shifts today" value="4" note="2 completed · 2 active"/><MiniStat label="Recorded shift sales" value="₹ 1,07,300" note="Sample values only"/><MiniStat label="Pending handovers" value="2" note="Requires closing entry" warn/></div><section className="panel full-panel"><div className="panel-heading"><div><h2>Shift register</h2><p>Search sample shifts and export the register.</p></div><div className="toolbar"><div className="search-box"><Search size={15}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search staff or shift ID"/></div><button className="button secondary compact" onClick={exportCsv}><Download size={15}/> Export</button></div></div><ShiftTable shifts={filteredShifts}/></section></>;
   if(active==='Tank & nozzle stock') return <><div className="section-stats"><MiniStat label="Recorded stock" value="18,420 L" note="Across 3 demo tanks"/><MiniStat label="Active nozzles" value="4" note="Sample configuration"/><MiniStat label="Variance flagged" value="0.42%" note="Sample threshold: 0.30%" warn/></div><section className="panel full-panel"><div className="panel-heading"><div><h2>Tank register</h2><p>Demo capacity and available stock readings</p></div><button className="button secondary compact" onClick={()=>notify('Tank readings form will be implemented in Phase 2')}><Plus size={15}/> Record reading</button></div><div className="inventory-grid"><InventoryCard title="Petrol tank 01" code="TK-001" stock="8,240 L" capacity="12,000 L" pct={68.7} tone="green"/><InventoryCard title="Diesel tank 02" code="TK-002" stock="6,180 L" capacity="10,000 L" pct={61.8} tone="gold"/><InventoryCard title="Petrol tank 03" code="TK-003" stock="4,000 L" capacity="8,000 L" pct={50} tone="blue"/></div><div className="notice-box"><AlertTriangle size={17}/><div><strong>Sample variance alert</strong><p>One illustrative reading exceeds the sample 0.30% review threshold. Confirm measurement procedures before using real operational data.</p></div></div></section><section className="panel full-panel"><div className="panel-heading"><div><h2>Nozzle meter readings</h2><p>Opening and closing readings are demo placeholders.</p></div></div><table><thead><tr><th>NOZZLE</th><th>FUEL</th><th>OPENING (L)</th><th>CLOSING (L)</th><th>DISPENSED</th><th>STATUS</th></tr></thead><tbody>{[['N-01','Petrol','142,820.4','143,118.6','298.2 L'],['N-02','Petrol','108,421.0','108,706.8','285.8 L'],['N-03','Diesel','92,114.6','92,386.2','271.6 L'],['N-04','Diesel','87,550.2','87,804.4','254.2 L']].map(r=><tr key={r[0]}>{r.map((c,i)=><td key={i}>{c}</td>)}<td><span className="status-badge closed"><i/>Recorded</span></td></tr>)}</tbody></table></section></>;
-  if(active==='Sales & transactions') return <><div className="section-stats"><MiniStat label="Recorded sales today" value="₹ 1,84,620" note="Illustrative only"/><MiniStat label="UPI collections" value="₹ 74,280" note="40.2% of sample sales"/><MiniStat label="Cash collections" value="₹ 58,340" note="31.6% of sample sales"/></div><section className="panel full-panel"><div className="panel-heading"><div><h2>Transaction register</h2><p>Sample sales entries, not connected to a payment gateway.</p></div><div className="toolbar"><select className="filter-select" value={fuelType} onChange={e=>setFuelType(e.target.value)}><option>All fuel</option><option>Petrol</option><option>Diesel</option></select><button className="button secondary compact" onClick={exportCsv}><Download size={15}/> Export</button></div></div><table><thead><tr><th>REFERENCE</th><th>TIME</th><th>FUEL TYPE</th><th>VOLUME</th><th>PAYMENT</th><th>AMOUNT</th><th>STATUS</th></tr></thead><tbody>{[['TX-10082','14:32','Petrol','24.6 L','UPI','₹ 2,460'],['TX-10081','14:25','Diesel','31.2 L','Cash','₹ 2,980'],['TX-10080','14:18','Petrol','18.0 L','Card','₹ 1,800'],['TX-10079','14:04','Diesel','42.5 L','UPI','₹ 4,050'],['TX-10078','13:52','Petrol','12.4 L','Cash','₹ 1,240'],['TX-10077','13:46','Diesel','27.8 L','Credit','₹ 2,650']].filter(r=>fuelType==='All fuel'||r[2]===fuelType).map(r=><tr key={r[0]}>{r.map((c,i)=><td key={i}>{c}</td>)}<td><span className="status-badge closed"><i/>Recorded</span></td></tr>)}</tbody></table></section></>;
+  if(active==='Sales & transactions') return <><div className="section-stats"><MiniStat label="Recorded sales today" value="₹ 1,84,620" note="Illustrative only"/><MiniStat label="UPI collections" value="₹ 74,280" note="40.2% of sample sales"/><MiniStat label="Cash collections" value="₹ 58,340" note="31.6% of sample sales"/></div><section className="panel full-panel"><div className="panel-heading"><div><h2>Transaction register</h2><p>Sample sales entries, not connected to a payment gateway.</p></div><div className="toolbar"><div className="search-box"><Search size={15}/><input value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} placeholder="Search reference or payment" aria-label="Search transactions"/></div><select className="filter-select" value={fuelType} onChange={e=>setFuelType(e.target.value)} aria-label="Filter fuel type"><option>All fuel</option><option>Petrol</option><option>Diesel</option></select><button className="button secondary compact" onClick={exportCsv}><Download size={15}/> Export</button></div></div><table><thead><tr><th>REFERENCE</th><th>TIME</th><th>FUEL TYPE</th><th>VOLUME</th><th>PAYMENT</th><th>AMOUNT</th><th>STATUS</th></tr></thead><tbody>{[['TX-10082','14:32','Petrol','24.6 L','UPI','₹ 2,460'],['TX-10081','14:25','Diesel','31.2 L','Cash','₹ 2,980'],['TX-10080','14:18','Petrol','18.0 L','Card','₹ 1,800'],['TX-10079','14:04','Diesel','42.5 L','UPI','₹ 4,050'],['TX-10078','13:52','Petrol','12.4 L','Cash','₹ 1,240'],['TX-10077','13:46','Diesel','27.8 L','Credit','₹ 2,650']].filter(r=>(fuelType==='All fuel'||r[2]===fuelType)&&r.join(' ').toLowerCase().includes(searchTerm.toLowerCase())).map(r=><tr key={r[0]}>{r.map((c,i)=><td key={i}>{c}</td>)}<td><span className="status-badge closed"><i/>Recorded</span></td></tr>)}</tbody></table></section></>;
   if(active==='Staff') return <><div className="section-stats"><MiniStat label="Team members" value="8" note="Sample roster"/><MiniStat label="On shift now" value="4" note="Across 4 nozzles"/><MiniStat label="Handover status" value="2 pending" note="Sample shift status" warn/></div><section className="panel full-panel"><div className="panel-heading"><div><h2>Station team</h2><p>Illustrative staff roster for the prototype.</p></div><button className="button primary compact" onClick={()=>notify('Staff management form planned for Phase 2')}><Plus size={15}/> Add staff</button></div><div className="staff-grid">{[['Rakesh Debbarma','RD','Attendant','Morning shift','On duty'],['Milan Saha','MS','Attendant','Morning shift','On duty'],['Bikash Reang','BR','Shift supervisor','Evening shift','On duty'],['Ananya Das','AD','Attendant','Evening shift','On duty'],['Suman Paul','SP','Cashier','General','Available'],['Mampi Jamatia','MJ','Attendant','General','Available']].map(s=><div className="staff-card" key={s[0]}><div className="staff-card-top"><div className="staff-avatar large">{s[1]}</div><span className="status-badge closed"><i/>{s[4]}</span></div><h3>{s[0]}</h3><p>{s[2]}</p><div className="staff-card-foot"><Clock3 size={14}/>{s[3]}</div></div>)}</div></section></>;
   if(active==='Expenses & credit') return <><div className="section-stats"><MiniStat label="Recorded expenses" value="₹ 8,450" note="Today's demo entries"/><MiniStat label="Credit outstanding" value="₹ 32,600" note="Illustrative ledger"/><MiniStat label="Credit customers" value="12" note="Sample accounts"/></div><section className="panel full-panel"><div className="panel-heading"><div><h2>Expense register</h2><p>Sample operational costs, not accounting advice.</p></div><button className="button primary compact" onClick={()=>notify('Expense entry form planned for Phase 2')}><Plus size={15}/> Add expense</button></div><table><thead><tr><th>REFERENCE</th><th>CATEGORY</th><th>DESCRIPTION</th><th>RECORDED BY</th><th>AMOUNT</th></tr></thead><tbody>{[['EX-021','Utilities','Electricity estimate','Station Owner','₹ 3,200'],['EX-020','Maintenance','Equipment service sample','Station Owner','₹ 2,500'],['EX-019','Supplies','Cleaning and station supplies','Shift supervisor','₹ 1,450'],['EX-018','Other','Miscellaneous sample expense','Station Owner','₹ 1,300']].map(r=><tr key={r[0]}>{r.map((c,i)=><td key={i}>{c}</td>)}</tr>)}</tbody></table><div className="notice-box"><ShieldCheck size={17}/><div><strong>Demo ledger</strong><p>Credit and expense figures are illustrative. Tax, accounting, and customer-credit workflows require validation before production use.</p></div></div></section></>;
   if(active==='Reports') return <><div className="section-stats"><MiniStat label="Report templates" value="4" note="Available in this preview"/><MiniStat label="Export format" value="CSV" note="Shift register supported"/><MiniStat label="Data source" value="Demo" note="No backend connected"/></div><div className="report-grid">{[['Daily sales summary','Sales by fuel type, payment method and shift.','₹ 1,84,620'],['Fuel stock reconciliation','Recorded stock movements and variance review.','0.42% variance'],['Shift closing report','Staff assignments, meter readings and collections.','4 sample shifts'],['Expenses & credit ledger','Sample expenses and outstanding customer balances.','₹ 32,600 credit']].map((r,i)=><div className="report-card" key={r[0]}><div className="report-card-icon"><FileText size={19}/></div><span className="report-tag">DEMO REPORT</span><h3>{r[0]}</h3><p>{r[1]}</p><div className="report-card-bottom"><strong>{r[2]}</strong><button onClick={()=>i===2?exportCsv():notify('This report will be exportable after backend implementation')}><Download size={15}/> Export</button></div></div>)}</div></>;
