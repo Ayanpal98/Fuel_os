@@ -1,9 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
-  Activity, ArrowDownRight, ArrowUpRight, Bell, Building2, CalendarDays, Check,
+  Activity, ArrowDownRight, ArrowUpRight, ArrowRight, Bell, Building2, CalendarDays, Check, CheckCircle2,
   ChevronDown, ChevronLeft, ChevronRight, CircleHelp, ClipboardCheck, Download,
-  Droplets, Fuel, Gauge, LayoutDashboard, LogOut, Menu, MoreHorizontal,
+  Droplets, Fuel, Gauge, LayoutDashboard, LockKeyhole, LogOut, Mail, Menu, MoreHorizontal, Phone, PlayCircle,
   Search, Settings, ShieldCheck, SlidersHorizontal, TrendingUp, Users, Wallet,
   X, Plus, FileText, Clock3, CircleDollarSign, AlertTriangle, Filter, Eye
 } from 'lucide-react';
@@ -38,6 +38,145 @@ const navGroups = [
 const money = n => '₹' + Number(n).toLocaleString('en-IN');
 
 function App() {
+  const [route, setRoute] = useState(() => window.location.pathname === '/login' ? 'login' : window.location.pathname === '/dashboard' ? 'dashboard' : 'home');
+  const [loginMessage, setLoginMessage] = useState('');
+  const [mobileNav, setMobileNav] = useState(false);
+
+  const navigate = (next) => {
+    const path = next === 'home' ? '/' : next === 'login' ? '/login' : '/dashboard';
+    if (window.location.pathname !== path) window.history.pushState({}, '', path);
+    setRoute(next);
+    setLoginMessage('');
+    setMobileNav(false);
+    window.scrollTo({top:0,behavior:'smooth'});
+  };
+
+  useEffect(() => {
+    const onPopState = () => {
+      const path = window.location.pathname;
+      setRoute(path === '/login' ? 'login' : path === '/dashboard' ? 'dashboard' : 'home');
+      setLoginMessage('');
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  useEffect(() => {
+    document.title = route === 'login' ? 'Owner sign in | ATSFY FuelOS' : route === 'dashboard' ? 'Station overview | ATSFY FuelOS' : 'ATSFY FuelOS | Run your station with clarity';
+    const description = route === 'login'
+      ? 'Sign in to your ATSFY FuelOS station workspace.'
+      : 'A simpler way for independent petrol pump owners to track sales, fuel stock, shifts and station performance.';
+    let meta = document.querySelector('meta[name="description"]');
+    if (meta) meta.setAttribute('content', description);
+  }, [route]);
+
+  if (route === 'dashboard') return <Dashboard onLogout={() => navigate('home')} />;
+  if (route === 'login') return <LoginPage onBack={() => navigate('home')} onDemo={() => navigate('dashboard')} message={loginMessage} setMessage={setLoginMessage} />;
+
+  return <div className="marketing-site">
+    <header className="marketing-nav">
+      <button className="marketing-brand" onClick={() => navigate('home')} aria-label="ATSFY FuelOS home">
+        <span className="marketing-brand-icon"><Fuel size={23}/></span>
+        <span className="marketing-brand-copy"><strong>ATSFY <em>FuelOS</em></strong><small>STATION OPERATIONS</small></span>
+      </button>
+      <button className="marketing-mobile-toggle" onClick={() => setMobileNav(v => !v)} aria-label="Toggle navigation"><Menu size={21}/></button>
+      <nav className={mobileNav ? 'marketing-links marketing-links-open' : 'marketing-links'} aria-label="Main navigation">
+        <a href="#platform" onClick={() => setMobileNav(false)}>Platform</a>
+        <a href="#how-it-works" onClick={() => setMobileNav(false)}>How it works</a>
+        <a href="#why-fuelos" onClick={() => setMobileNav(false)}>Why FuelOS</a>
+        <button className="marketing-login-link" onClick={() => navigate('login')}>Owner sign in</button>
+        <button className="marketing-nav-cta" onClick={() => navigate('login')}>Get started <ArrowRight size={16}/></button>
+      </nav>
+    </header>
+
+    <main>
+      <section className="marketing-hero">
+        <div className="hero-copy">
+          <div className="hero-kicker"><span className="hero-live-dot"/> BUILT FOR INDEPENDENT FUEL RETAILERS</div>
+          <h1>Your station.<br/><span>Your numbers.</span><br/>Under control.</h1>
+          <p className="hero-description">A clearer, calmer way to manage everyday petrol pump operations — from fuel stock and shift handovers to sales, expenses and reports.</p>
+          <div className="hero-actions">
+            <button className="hero-primary" onClick={() => navigate('login')}>Owner sign in <ArrowRight size={17}/></button>
+            <button className="hero-secondary" onClick={() => navigate('dashboard')}><PlayCircle size={18}/> Explore demo dashboard</button>
+          </div>
+          <div className="hero-trust-row"><span><CheckCircle2 size={16}/> Made for station workflows</span><span><CheckCircle2 size={16}/> Clear, owner-first view</span></div>
+          <div className="hero-note"><LockKeyhole size={14}/> Secure owner access is planned for the upcoming backend phase.</div>
+        </div>
+        <div className="hero-visual" aria-label="FuelOS dashboard preview">
+          <div className="visual-orbit orbit-one"></div><div className="visual-orbit orbit-two"></div>
+          <div className="preview-window">
+            <div className="preview-topbar"><div className="preview-brand"><span><Fuel size={13}/></span> FuelOS <small>OWNER VIEW</small></div><div className="preview-dots"><i/><i/><i/></div></div>
+            <div className="preview-body">
+              <div className="preview-greeting"><div><small>STATION OVERVIEW</small><h3>Good afternoon, Owner</h3><p>Your day at a glance</p></div><span className="preview-date">TODAY</span></div>
+              <div className="preview-metrics">
+                <div className="preview-metric"><span>Recorded sales</span><strong>₹ 1.84L</strong><small className="metric-up"><TrendingUp size={12}/> Illustrative</small></div>
+                <div className="preview-metric"><span>Fuel dispensed</span><strong>3,248 <small>L</small></strong><small>Petrol + diesel</small></div>
+              </div>
+              <div className="preview-chart-card"><div className="preview-chart-title"><strong>Sales overview</strong><span>7 days</span></div><div className="mini-chart"><div style={{height:'40%'}}/><div style={{height:'57%'}}/><div style={{height:'45%'}}/><div style={{height:'68%'}}/><div style={{height:'76%'}}/><div style={{height:'91%'}}/><div style={{height:'65%'}}/></div><div className="mini-chart-labels"><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span></div></div>
+              <div className="preview-bottom-row"><div className="preview-stock-icon"><Droplets size={16}/></div><div className="preview-stock-copy"><strong>Fuel stock</strong><span>Sample inventory view</span></div><div className="preview-stock-bar"><i/></div><strong className="preview-stock-pct">68%</strong></div>
+            </div>
+            <div className="preview-footer"><span className="preview-footer-dot"/> Product preview <span>Sample data only</span></div>
+          </div>
+          <div className="hero-float-card float-shifts"><span className="float-icon"><Clock3 size={17}/></span><div><strong>Shift handover</strong><small>Keep every shift in view</small></div><CheckCircle2 size={17} className="float-check"/></div>
+          <div className="hero-float-card float-stock"><span className="float-icon gold"><ShieldCheck size={17}/></span><div><strong>Owner-first clarity</strong><small>See what needs attention</small></div></div>
+        </div>
+      </section>
+
+      <section className="marketing-proof-strip" aria-label="FuelOS capabilities">
+        <div><strong>ONE VIEW</strong><span>Daily station operations</span></div><i/><div><strong>LESS GUESSWORK</strong><span>Clear records and reports</span></div><i/><div><strong>BUILT TO GROW</strong><span>From one station upwards</span></div>
+      </section>
+
+      <section className="marketing-section platform-section" id="platform">
+        <div className="section-heading"><span className="section-eyebrow">THE PLATFORM</span><h2>Everything your station day revolves around.</h2><p>Bring the everyday operating picture together in one workspace — designed around how a fuel station runs.</p></div>
+        <div className="feature-grid">
+          <article className="feature-card feature-primary"><div className="feature-icon"><Wallet size={21}/></div><span className="feature-index">01</span><h3>Sales & collections</h3><p>Review daily sales, transaction records and payment collections without hunting through scattered registers.</p><div className="feature-tags"><span>Daily sales</span><span>Payments</span></div></article>
+          <article className="feature-card"><div className="feature-icon"><Droplets size={21}/></div><span className="feature-index">02</span><h3>Fuel stock visibility</h3><p>Keep tank levels, nozzle readings and stock reconciliation in one clear operating view.</p><div className="feature-tags"><span>Tank stock</span><span>Nozzles</span></div></article>
+          <article className="feature-card"><div className="feature-icon"><Clock3 size={21}/></div><span className="feature-index">03</span><h3>Shifts & handovers</h3><p>See who is on duty, which shifts are active and what needs a closing review.</p><div className="feature-tags"><span>Staff</span><span>Handover</span></div></article>
+          <article className="feature-card"><div className="feature-icon"><CircleDollarSign size={21}/></div><span className="feature-index">04</span><h3>Expenses & credit</h3><p>Bring common expenses and outstanding customer balances into a single ledger view.</p><div className="feature-tags"><span>Expenses</span><span>Credit ledger</span></div></article>
+          <article className="feature-card"><div className="feature-icon"><Activity size={21}/></div><span className="feature-index">05</span><h3>Reports that make sense</h3><p>Get a more readable view of operating performance and records that need attention.</p><div className="feature-tags"><span>Summaries</span><span>Exports</span></div></article>
+          <article className="feature-card feature-cta"><span className="feature-cta-orb"><ArrowRight size={22}/></span><span className="section-eyebrow">TAKE A LOOK</span><h3>See the owner workspace.</h3><p>Explore the current interface using clearly labelled illustrative data.</p><button onClick={() => navigate('dashboard')}>Explore demo <ArrowRight size={16}/></button></article>
+        </div>
+      </section>
+
+      <section className="how-section" id="how-it-works">
+        <div className="how-inner"><div className="section-heading align-left"><span className="section-eyebrow">HOW IT WORKS</span><h2>A straightforward way to start.</h2><p>FuelOS is being built in phases so station owners can understand the workflow before live records are introduced.</p></div>
+          <div className="steps-grid"><div className="step-item"><span>01</span><h3>Owner access</h3><p>Station owners will sign in to their own workspace after backend authentication is enabled.</p></div><div className="step-item"><span>02</span><h3>Set up your station</h3><p>Configure station details, fuel types, tanks, nozzles and team members.</p></div><div className="step-item"><span>03</span><h3>Run the daily workflow</h3><p>Record sales and readings, manage shifts and review reports from one place.</p></div></div>
+        </div>
+      </section>
+
+      <section className="why-section" id="why-fuelos"><div className="why-copy"><span className="section-eyebrow">DESIGNED FOR OWNERS</span><h2>Less time chasing registers.<br/><span>More clarity in the day.</span></h2><p>FuelOS aims to make the operating picture easier to understand — especially for independent stations that need practical tools, not unnecessary complexity.</p><ul><li><CheckCircle2 size={18}/> A clean overview instead of scattered screens</li><li><CheckCircle2 size={18}/> Clearer shift and stock review workflows</li><li><CheckCircle2 size={18}/> Reports that help owners ask better questions</li></ul><button className="hero-primary" onClick={() => navigate('login')}>Go to owner sign in <ArrowRight size={17}/></button></div><div className="why-visual"><div className="why-big-icon"><Fuel size={44}/></div><div className="why-statement"><span>BUILT AROUND YOUR DAY</span><strong>One station.<br/>One clear view.</strong><small>ATSFY FuelOS · Product in progress</small></div><div className="why-pill"><ShieldCheck size={16}/> Owner-first by design</div></div></section>
+
+      <section className="marketing-bottom-cta"><div><span className="section-eyebrow">YOUR STATION, MORE VISIBLE</span><h2>Ready to see FuelOS in action?</h2><p>Preview the current owner dashboard, or open the sign-in screen for the upcoming owner workspace.</p></div><div className="bottom-cta-actions"><button className="hero-primary" onClick={() => navigate('login')}>Owner sign in <ArrowRight size={17}/></button><button className="hero-secondary" onClick={() => navigate('dashboard')}>Explore demo</button></div></section>
+    </main>
+
+    <footer className="marketing-footer"><button className="marketing-brand" onClick={() => navigate('home')}><span className="marketing-brand-icon"><Fuel size={21}/></span><span className="marketing-brand-copy"><strong>ATSFY <em>FuelOS</em></strong><small>STATION OPERATIONS</small></span></button><span>© 2026 ATSFY Technologies. Product preview.</span><div><a href="mailto:atsfy@atsfy.tech">Contact ATSFY</a><button onClick={() => navigate('login')}>Owner sign in</button></div></footer>
+  </div>;
+}
+
+function LoginPage({ onBack, onDemo, message, setMessage }) {
+  const [showPassword, setShowPassword] = useState(false);
+  return <div className="login-page">
+    <header className="login-header"><button className="marketing-brand" onClick={onBack}><span className="marketing-brand-icon"><Fuel size={22}/></span><span className="marketing-brand-copy"><strong>ATSFY <em>FuelOS</em></strong><small>STATION OPERATIONS</small></span></button><button className="login-back" onClick={onBack}><ChevronLeft size={16}/> Back to home</button></header>
+    <main className="login-layout">
+      <section className="login-story"><div className="hero-kicker"><span className="hero-live-dot"/> OWNER WORKSPACE</div><h1>Your station,<br/><span>in one view.</span></h1><p>Sign in to access your station workspace, operating records and owner dashboard.</p><div className="login-benefit-list"><span><CheckCircle2 size={17}/> Station sales and collections</span><span><CheckCircle2 size={17}/> Fuel stock and shift handovers</span><span><CheckCircle2 size={17}/> Reports and operating summaries</span></div><div className="login-story-foot"><ShieldCheck size={17}/> Authentication and protected station data will be enabled in the backend phase.</div></section>
+      <section className="login-card"><div className="login-card-mark"><LockKeyhole size={22}/></div><span className="section-eyebrow">STATION OWNER ACCESS</span><h2>Welcome back</h2><p className="login-card-subtitle">Enter your account details to continue.</p>
+        <form onSubmit={e => {e.preventDefault();setMessage('Owner sign-in is not connected yet. Backend authentication, account verification and secure sessions are planned for Phase 2. You can explore the demo dashboard below.');}}>
+          <label htmlFor="owner-email">Email address</label><div className="login-input-wrap"><Mail size={17}/><input id="owner-email" type="email" name="email" autoComplete="username" placeholder="you@yourstation.com" required/></div>
+          <label htmlFor="owner-password">Password</label><div className="login-input-wrap"><LockKeyhole size={17}/><input id="owner-password" type={showPassword?'text':'password'} name="password" autoComplete="current-password" placeholder="Enter your password" required/><button type="button" className="password-toggle" onClick={() => setShowPassword(v => !v)}>{showPassword?'Hide':'Show'}</button></div>
+          <div className="login-form-row"><label className="remember-label"><input type="checkbox" name="remember"/> Keep me signed in</label><button type="button" className="forgot-button" onClick={() => setMessage('Password recovery will be available after secure backend authentication is implemented.')}>Forgot password?</button></div>
+          <button className="login-submit" type="submit">Sign in to FuelOS <ArrowRight size={17}/></button>
+          {message && <div className="login-notice" role="status"><ShieldCheck size={17}/><span>{message}</span></div>}
+        </form>
+        <div className="login-divider"><span>OR</span></div><button className="login-demo-button" onClick={onDemo}><PlayCircle size={17}/> Explore demo dashboard</button>
+        <div className="login-security-note"><LockKeyhole size={14}/> Do not enter a real password in this preview. Authentication is not active yet.</div>
+        <div className="login-request-access">Need an owner account? <a href="mailto:atsfy@atsfy.tech?subject=FuelOS%20owner%20access">Contact ATSFY</a></div>
+      </section>
+    </main>
+    <footer className="login-footer"><span>© 2026 ATSFY Technologies</span><span>FuelOS · Owner access preview</span></footer>
+  </div>;
+}
+
+function Dashboard({ onLogout }) {
   const [active, setActive] = useState('Overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -191,7 +330,7 @@ function App() {
           <button className="icon-btn alert-btn" aria-label="Notifications" onClick={() => setShowAlerts(v => !v)}><Bell size={18}/><i/></button>
           <div className="profile-wrap">
             <button className="profile-button" onClick={() => setShowProfile(v => !v)}><div className="profile-avatar">AP</div><div className="profile-text"><strong>Station Owner</strong><span>Administrator</span></div><ChevronDown size={14}/></button>
-            {showProfile && <div className="dropdown profile-dropdown"><button onClick={() => notify('Owner profile is sample data')}><Users size={15}/> Owner profile</button><button onClick={() => notify('Settings will be available in Phase 2')}><Settings size={15}/> Preferences</button><button onClick={() => notify('Sign-out is disabled in demo mode')}><LogOut size={15}/> Sign out</button></div>}
+            {showProfile && <div className="dropdown profile-dropdown"><button onClick={() => notify('Owner profile is sample data')}><Users size={15}/> Owner profile</button><button onClick={() => notify('Settings will be available in Phase 2')}><Settings size={15}/> Preferences</button><button onClick={onLogout}><LogOut size={15}/> Sign out</button></div>}
           </div>
         </div>
         {showAlerts && <div className="dropdown alert-dropdown"><div className="dropdown-title">Notifications <span>2 new</span></div><div className="alert-row"><div className="alert-icon amber"><AlertTriangle size={16}/></div><div><strong>Stock review needed</strong><p>Diesel tank variance is flagged in sample data.</p><small>Demo alert · 10 min ago</small></div></div><div className="alert-row"><div className="alert-icon green"><ClipboardCheck size={16}/></div><div><strong>Shift handover pending</strong><p>Two active shifts need a closing entry.</p><small>Demo alert · 35 min ago</small></div></div></div>}
