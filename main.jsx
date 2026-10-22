@@ -119,7 +119,7 @@ function App() {
       ];
       filename = 'atsfy-fuelos-demo-overview.csv';
     }
-    const csv = [headers, ...data].map(row => row.map(v => \`"\${String(v).replaceAll('"','""')}"\`).join(',')).join('\r\n');
+    const csv = [headers, ...data].map(row => row.map(v => `"${String(v).replaceAll('"','""')}"`).join(',')).join('\r\n');
     const blob = new Blob(['\uFEFF', csv], {type:'text/csv;charset=utf-8;'});
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -129,7 +129,7 @@ function App() {
     link.click();
     link.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-    notify(\`Demo \${active.toLowerCase()} export prepared\`);
+    notify(`Demo ${active.toLowerCase()} export prepared`);
   }
 
   function addShift(e) {
@@ -228,11 +228,11 @@ function Overview({notify,setActive,shifts}) {
   const dayCount = Number.parseInt(period, 10);
   const chartData = Array.from({length: dayCount}, (_, i) => {
     const sample = dailySales[i % dailySales.length];
-    return { day: dayCount === 7 ? sample.day : \`D\${i + 1}\`, petrol: sample.petrol, diesel: sample.diesel };
+    return { day: dayCount === 7 ? sample.day : `D${i + 1}`, petrol: sample.petrol, diesel: sample.diesel };
   });
   const petrolTotal = chartData.reduce((sum, day) => sum + day.petrol, 0);
   const dieselTotal = chartData.reduce((sum, day) => sum + day.diesel, 0);
-  const formatLakhs = value => \`₹ \${(value / 100).toFixed(2)}L\`;
+  const formatLakhs = value => `₹ ${(value / 100).toFixed(2)}L`;
   return <>
     <div className="metric-grid">{metrics.map((m,i)=><div className="metric-card" key={m.label}>
       <div className="metric-top"><span>{m.label}</span><div className={`metric-icon ${m.tone}`}><m.icon size={18}/></div></div>
