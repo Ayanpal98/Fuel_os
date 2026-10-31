@@ -160,11 +160,25 @@ create table if not exists public.sale_payments (
     references public.sales(station_id, id) on delete restrict
 );
 
+create table if not exists public.tank_dips (
+  id uuid primary key default gen_random_uuid(),
+  station_id uuid not null references public.stations(id) on delete cascade,
+  tank_id uuid not null,
+  measured_volume_l numeric(14,3) not null check (measured_volume_l >= 0),
+  measurement_method text not null check (measurement_method in ('manual_dip','electronic_gauge','imported')),
+  recorded_by uuid not null references auth.users(id) on delete restrict,
+  measured_at timestamptz not null default now(),
+  notes text,
+  created_at timestamptz not null default now(),
+  foreign key (station_id, tank_id)
+    references public.tanks(station_id, id) on delete restrict
+);
+
 create table if not exists public.stock_movements (
   id uuid primary key default gen_random_uuid(),
   station_id uuid not null references public.stations(id) on delete cascade,
   tank_id uuid not null,
-  movement_type text not null check (movement_type in ('delivery','dip','adjustment','transfer_in','transfer_out')),
+  movement_type text not null check (movement_type in ('delivery','adjustment','transfer_in','transfer_out')),
   quantity_l numeric(14,3) not null,
   reference text,
   reason text,
@@ -174,6 +188,8 @@ create table if not exists public.stock_movements (
   foreign key (station_id, tank_id)
     references public.tanks(station_id, id) on delete restrict,
   check (quantity_l <> 0),
+  check (movement_type not in ('delivery','transfer_in') or quantity_l > 0),
+  check (movement_type <> 'transfer_out' or quantity_l < 0),
   check (movement_type <> 'adjustment' or length(trim(coalesce(reason,''))) >= 5)
 );
 
@@ -209,6 +225,9 @@ create index if not exists shifts_station_opened_idx on public.shifts(station_id
 create index if not exists meter_readings_station_nozzle_time_idx on public.meter_readings(station_id, nozzle_id, recorded_at desc);
 create index if not exists sales_station_time_idx on public.sales(station_id, occurred_at desc);
 create index if not exists payments_station_sale_idx on public.sale_payments(station_id, sale_id);
+create unique index if not exists meter_readings_one_opening_per_nozzle_shift on public.meter_readings(station_id, shift_id, nozzle_id) where reading_type = 'opening';
+create unique index if not exists meter_readings_one_closing_per_nozzle_shift on public.meter_readings(station_id, shift_id, nozzle_id) where reading_type = 'closing';
+create index if not exists tank_dips_station_tank_time_idx on public.tank_dips(station_id, tank_id, measured_at desc);
 create index if not exists stock_movements_station_tank_time_idx on public.stock_movements(station_id, tank_id, occurred_at desc);
 create index if not exists expenses_station_spent_idx on public.expenses(station_id, spent_at desc);
 create index if not exists audit_events_org_time_idx on public.audit_events(organization_id, occurred_at desc);
@@ -272,6 +291,7 @@ alter table public.meter_readings enable row level security;
 alter table public.sales enable row level security;
 alter table public.sale_payments enable row level security;
 alter table public.stock_movements enable row level security;
+alter table public.tank_dips enable row level security;
 alter table public.expenses enable row level security;
 alter table public.audit_events enable row level security;
 
@@ -345,7 +365,18 @@ for insert to authenticated with check (
 create policy sale_payments_station_access on public.sale_payments
 for select to authenticated using (private.can_access_station(station_id));
 create policy sale_payments_station_insert on public.sale_payments
-for insert to authenticated with check (private.can_access_station(station_id, array['manager','supervisor','attendant']));
+for insert to authenticated with check (
+  private.can_access_station(station_id, array['manager','supervisor','attendant'])
+  and recorded_by = (select auth.uid())
+);
+
+create policy tank_dips_station_access on public.tank_dips
+for select to authenticated using (private.can_access_station(station_id));
+create policy tank_dips_station_insert on public.tank_dips
+for insert to authenticated with check (
+  private.can_access_station(station_id, array['manager','supervisor'])
+  and recorded_by = (select auth.uid())
+);
 
 create policy stock_movements_station_access on public.stock_movements
 for select to authenticated using (private.can_access_station(station_id));
@@ -379,7 +410,7 @@ for select to authenticated using (
 grant select on public.organizations, public.organization_memberships, public.stations,
   public.station_memberships, public.fuel_products, public.tanks, public.nozzles,
   public.shifts, public.meter_readings, public.sales, public.sale_payments,
-  public.stock_movements, public.expenses to authenticated;
+  public.stock_movements, public.tank_dips, public.expenses, public.audit_events to authenticated;
 
 grant update on public.organizations to authenticated;
 grant insert on public.stations to authenticated;
@@ -387,6 +418,6 @@ grant insert, update on public.station_memberships, public.fuel_products,
   public.tanks, public.nozzles to authenticated;
 grant insert on public.shifts to authenticated;
 grant insert on public.meter_readings, public.sales, public.sale_payments,
-  public.stock_movements, public.expenses to authenticated;
+  public.stock_movements, public.tank_dips, public.expenses to authenticated;
 
 commit;
