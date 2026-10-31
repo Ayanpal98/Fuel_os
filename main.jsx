@@ -53,7 +53,6 @@ function App() {
     const onPopState = () => {
       const path = window.location.pathname;
       setRoute(path === '/login' ? 'login' : path === '/dashboard' ? 'dashboard' : 'home');
-      setLoginMessage('');
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
