@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://fuelos.atsfy.tech/sitemap.xml
