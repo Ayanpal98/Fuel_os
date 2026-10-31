@@ -39,14 +39,12 @@ const money = n => '₹' + Number(n).toLocaleString('en-IN');
 
 function App() {
   const [route, setRoute] = useState(() => window.location.pathname === '/login' ? 'login' : window.location.pathname === '/dashboard' ? 'dashboard' : 'home');
-  const [loginMessage, setLoginMessage] = useState('');
   const [mobileNav, setMobileNav] = useState(false);
 
   const navigate = (next) => {
     const path = next === 'home' ? '/' : next === 'login' ? '/login' : '/dashboard';
     if (window.location.pathname !== path) window.history.pushState({}, '', path);
     setRoute(next);
-    setLoginMessage('');
     setMobileNav(false);
     window.scrollTo({top:0,behavior:'smooth'});
   };
@@ -55,7 +53,6 @@ function App() {
     const onPopState = () => {
       const path = window.location.pathname;
       setRoute(path === '/login' ? 'login' : path === '/dashboard' ? 'dashboard' : 'home');
-      setLoginMessage('');
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
@@ -71,7 +68,7 @@ function App() {
   }, [route]);
 
   if (route === 'dashboard') return <Dashboard onLogout={() => navigate('home')} />;
-  if (route === 'login') return <LoginPage onBack={() => navigate('home')} onDemo={() => navigate('dashboard')} message={loginMessage} setMessage={setLoginMessage} />;
+  if (route === 'login') return <LoginPage onBack={() => navigate('home')} onDemo={() => navigate('dashboard')} />;
 
   return <div className="marketing-site">
     <header className="marketing-nav">
@@ -153,23 +150,17 @@ function App() {
   </div>;
 }
 
-function LoginPage({ onBack, onDemo, message, setMessage }) {
-  const [showPassword, setShowPassword] = useState(false);
+function LoginPage({ onBack, onDemo }) {
   return <div className="login-page">
     <header className="login-header"><button className="marketing-brand" onClick={onBack}><span className="marketing-brand-icon"><Fuel size={22}/></span><span className="marketing-brand-copy"><strong>ATSFY <em>FuelOS</em></strong><small>STATION OPERATIONS</small></span></button><button className="login-back" onClick={onBack}><ChevronLeft size={16}/> Back to home</button></header>
     <main className="login-layout">
       <section className="login-story"><div className="hero-kicker"><span className="hero-live-dot"/> OWNER WORKSPACE</div><h1>Your station,<br/><span>in one view.</span></h1><p>Sign in to access your station workspace, operating records and owner dashboard.</p><div className="login-benefit-list"><span><CheckCircle2 size={17}/> Station sales and collections</span><span><CheckCircle2 size={17}/> Fuel stock and shift handovers</span><span><CheckCircle2 size={17}/> Reports and operating summaries</span></div><div className="login-story-foot"><ShieldCheck size={17}/> Authentication and protected station data will be enabled in the backend phase.</div></section>
-      <section className="login-card"><div className="login-card-mark"><LockKeyhole size={22}/></div><span className="section-eyebrow">STATION OWNER ACCESS</span><h2>Welcome back</h2><p className="login-card-subtitle">Enter your account details to continue.</p>
-        <form onSubmit={e => {e.preventDefault();setMessage('Owner sign-in is not connected yet. Backend authentication, account verification and secure sessions are planned for Phase 2. You can explore the demo dashboard below.');}}>
-          <label htmlFor="owner-email">Email address</label><div className="login-input-wrap"><Mail size={17}/><input id="owner-email" type="email" name="email" autoComplete="username" placeholder="you@yourstation.com" required/></div>
-          <label htmlFor="owner-password">Password</label><div className="login-input-wrap"><LockKeyhole size={17}/><input id="owner-password" type={showPassword?'text':'password'} name="password" autoComplete="current-password" placeholder="Enter your password" required/><button type="button" className="password-toggle" onClick={() => setShowPassword(v => !v)}>{showPassword?'Hide':'Show'}</button></div>
-          <div className="login-form-row"><label className="remember-label"><input type="checkbox" name="remember"/> Keep me signed in</label><button type="button" className="forgot-button" onClick={() => setMessage('Password recovery will be available after secure backend authentication is implemented.')}>Forgot password?</button></div>
-          <button className="login-submit" type="submit">Sign in to FuelOS <ArrowRight size={17}/></button>
-          {message && <div className="login-notice" role="status"><ShieldCheck size={17}/><span>{message}</span></div>}
-        </form>
-        <div className="login-divider"><span>OR</span></div><button className="login-demo-button" onClick={onDemo}><PlayCircle size={17}/> Explore demo dashboard</button>
-        <div className="login-security-note"><LockKeyhole size={14}/> Do not enter a real password in this preview. Authentication is not active yet.</div>
-        <div className="login-request-access">Need an owner account? <a href="mailto:atsfy@atsfy.tech?subject=FuelOS%20owner%20access">Contact ATSFY</a></div>
+      <section className="login-card"><div className="login-card-mark"><LockKeyhole size={22}/></div><span className="section-eyebrow">STATION OWNER ACCESS</span><h2>Owner access is coming</h2><p className="login-card-subtitle">Secure sign-in will be enabled after the pilot backend and access controls are reviewed.</p>
+        <div className="login-preview-status"><span className="login-preview-status-dot"/> Authentication not connected</div>
+        <div className="login-notice" role="status"><ShieldCheck size={17}/><span>This preview does not collect or transmit passwords. No account or station data is connected yet.</span></div>
+        <button className="login-demo-button login-demo-primary" onClick={onDemo}><PlayCircle size={17}/> Explore demo dashboard</button>
+        <div className="login-security-note"><LockKeyhole size={14}/> The dashboard uses illustrative records only. Changes stay in this browser session.</div>
+        <div className="login-request-access">Pilot enquiries: <a href="mailto:atsfy@atsfy.tech?subject=FuelOS%20pilot%20enquiry">Contact ATSFY</a></div>
       </section>
     </main>
     <footer className="login-footer"><span>© 2026 ATSFY Technologies</span><span>FuelOS · Owner access preview</span></footer>
@@ -291,6 +282,7 @@ function Dashboard({ onLogout }) {
     'Reports': ['Reports & exports', 'Explore sample operating reports for your station.']
   };
   const [pageTitle, pageSubtitle] = pageTitles[active] || pageTitles.Overview;
+  const currentDateLabel = new Intl.DateTimeFormat('en-IN', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }).format(new Date()).toUpperCase();
 
   return <div className="app-shell">
     <aside className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
@@ -299,9 +291,9 @@ function Dashboard({ onLogout }) {
         <div><div className="brand-name">ATSFY <span>FuelOS</span></div><div className="brand-caption">STATION OPERATIONS</div></div>
         <button className="icon-btn sidebar-close" onClick={() => setSidebarOpen(false)} aria-label="Close menu"><X size={18}/></button>
       </div>
-      <div className="station-select" onClick={() => notify('Station switcher is a demo control')} role="button" tabIndex="0">
+      <div className="station-select" onClick={() => notify('Station selection will be configured during pilot onboarding')} onKeyDown={e => {if(e.key === 'Enter' || e.key === ' '){e.preventDefault();notify('Station selection will be configured during pilot onboarding');}}} role="button" tabIndex="0" aria-label="Sample station selector">
         <div className="station-avatar"><Building2 size={18}/></div>
-        <div className="station-copy"><strong>Green Valley Fuels</strong><span>Agartala, Tripura</span></div>
+        <div className="station-copy"><strong>Sample station</strong><span>Location not configured</span></div>
         <ChevronDown size={15} className="muted"/>
       </div>
       <div className="nav-wrap">
@@ -336,9 +328,14 @@ function Dashboard({ onLogout }) {
         {showAlerts && <div className="dropdown alert-dropdown"><div className="dropdown-title">Notifications <span>2 new</span></div><div className="alert-row"><div className="alert-icon amber"><AlertTriangle size={16}/></div><div><strong>Stock review needed</strong><p>Diesel tank variance is flagged in sample data.</p><small>Demo alert · 10 min ago</small></div></div><div className="alert-row"><div className="alert-icon green"><ClipboardCheck size={16}/></div><div><strong>Shift handover pending</strong><p>Two active shifts need a closing entry.</p><small>Demo alert · 35 min ago</small></div></div></div>}
       </header>
 
+      <div className="demo-mode-banner" role="status">
+        <div className="demo-mode-icon"><ShieldCheck size={16}/></div>
+        <div><strong>Preview workspace</strong><span>Sample records only. Nothing here is connected to a live fuel station or backend.</span></div>
+        <span className="demo-mode-tag">LOCAL DEMO</span>
+      </div>
       <div className="page-content">
         <div className="page-heading">
-          <div><div className="eyebrow"><span className="eyebrow-line"/> THURSDAY, 22 OCTOBER 2026</div><h1>{pageTitle}</h1><p>{pageSubtitle}</p></div>
+          <div><div className="eyebrow"><span className="eyebrow-line"/> {currentDateLabel}</div><h1>{pageTitle}</h1><p>{pageSubtitle}</p></div>
           <div className="heading-actions"><button className="button secondary" onClick={exportCsv}><Download size={16}/> Export report</button><button className="button primary" onClick={() => setShowNewShift(true)}><Plus size={17}/> New shift</button></div>
         </div>
 
