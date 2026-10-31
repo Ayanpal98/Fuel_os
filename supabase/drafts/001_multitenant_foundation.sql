@@ -288,9 +288,7 @@ create policy stations_select_member on public.stations
 for select to authenticated using (private.is_org_member(organization_id));
 create policy stations_insert_admin on public.stations
 for insert to authenticated with check (private.is_org_member(organization_id, array['owner','admin']));
-create policy stations_update_admin on public.stations
-for update to authenticated using (private.is_org_member(organization_id, array['owner','admin']))
-with check (private.is_org_member(organization_id, array['owner','admin']));
+-- Station updates that affect tenant ownership/configuration are reserved for a reviewed server workflow.
 
 create policy station_memberships_select_accessible on public.station_memberships
 for select to authenticated using (private.can_access_station(station_id));
@@ -327,10 +325,6 @@ for insert to authenticated with check (
   private.can_access_station(station_id, array['manager','supervisor'])
   and opened_by = (select auth.uid())
 );
-create policy shifts_station_update on public.shifts
-for update to authenticated
-using (private.can_access_station(station_id, array['manager','supervisor']))
-with check (private.can_access_station(station_id, array['manager','supervisor']));
 
 create policy meter_readings_station_access on public.meter_readings
 for select to authenticated using (private.can_access_station(station_id));
@@ -374,28 +368,25 @@ for select to authenticated using (
   private.is_org_member(organization_id, array['owner','admin'])
   or (station_id is not null and private.can_access_station(station_id, array['manager']))
 );
-create policy audit_events_insert_actor on public.audit_events
-for insert to authenticated with check (
-  actor_user_id = (select auth.uid())
-  and private.is_org_member(organization_id)
-  and (station_id is null or private.can_access_station(station_id))
-);
 
 -- No UPDATE or DELETE policies are defined for audit_events, meter_readings,
--- sales, sale_payments or stock_movements. Corrections should be append-only
--- compensating events. A server-side onboarding/close workflow is still required.
+-- sales, sale_payments, stock_movements or shifts. Audit events are not client-writable.
+-- Corrections should be append-only compensating events. A trusted server-side
+-- onboarding/shift-close workflow must validate totals and state transitions.
 
 -- Explicit grants: public-schema API exposure must also be enabled in project settings
 -- where required. RLS remains the row-level authorization boundary.
 grant select on public.organizations, public.organization_memberships, public.stations,
   public.station_memberships, public.fuel_products, public.tanks, public.nozzles,
   public.shifts, public.meter_readings, public.sales, public.sale_payments,
-  public.stock_movements, public.expenses, public.audit_events to authenticated;
+  public.stock_movements, public.expenses to authenticated;
 
-grant insert, update on public.organizations, public.stations to authenticated;
+grant update on public.organizations to authenticated;
+grant insert on public.stations to authenticated;
 grant insert, update on public.station_memberships, public.fuel_products,
-  public.tanks, public.nozzles, public.shifts to authenticated;
+  public.tanks, public.nozzles to authenticated;
+grant insert on public.shifts to authenticated;
 grant insert on public.meter_readings, public.sales, public.sale_payments,
-  public.stock_movements, public.expenses, public.audit_events to authenticated;
+  public.stock_movements, public.expenses to authenticated;
 
 commit;
