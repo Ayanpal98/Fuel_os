@@ -40,6 +40,31 @@ const money = n => '₹' + Number(n).toLocaleString('en-IN');
 function App() {
   const [route, setRoute] = useState(() => window.location.pathname === '/login' ? 'login' : window.location.pathname === '/dashboard' ? 'dashboard' : 'home');
   const [mobileNav, setMobileNav] = useState(false);
+  const [shareNotice, setShareNotice] = useState('');
+
+  const shareFuelOS = async () => {
+    const shareUrl = new URL(window.location.origin);
+    shareUrl.searchParams.set('utm_source','share');
+    shareUrl.searchParams.set('utm_medium','webapp');
+    shareUrl.searchParams.set('utm_campaign','fuelos_pilot');
+    const shareData = {
+      title: 'ATSFY FuelOS — Station operations, made clearer',
+      text: 'Explore FuelOS, a station operations workspace for sales, fuel stock, shifts and reports.',
+      url: shareUrl.toString()
+    };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        setShareNotice('Thanks for sharing FuelOS.');
+      } else {
+        await navigator.clipboard.writeText(shareData.url);
+        setShareNotice('FuelOS link copied. Share it with a station owner.');
+      }
+    } catch (error) {
+      if (error?.name !== 'AbortError') setShareNotice('Sharing is unavailable in this browser. Copy the page link from your address bar.');
+    }
+    window.setTimeout(() => setShareNotice(''), 3500);
+  };
 
   const navigate = (next) => {
     const path = next === 'home' ? '/' : next === 'login' ? '/login' : '/dashboard';
@@ -95,7 +120,9 @@ function App() {
           <div className="hero-actions">
             <button className="hero-primary" onClick={() => navigate('login')}>Owner sign in <ArrowRight size={17}/></button>
             <button className="hero-secondary" onClick={() => navigate('dashboard')}><PlayCircle size={18}/> Explore demo dashboard</button>
+            <button className="hero-share-button" onClick={shareFuelOS}><ArrowRight size={16}/> Share FuelOS</button>
           </div>
+          {shareNotice && <div className="share-feedback" role="status">{shareNotice}</div>}
           <div className="hero-trust-row"><span><CheckCircle2 size={16}/> Made for station workflows</span><span><CheckCircle2 size={16}/> Clear, owner-first view</span></div>
           <div className="hero-note"><LockKeyhole size={14}/> Secure owner access is planned for the upcoming backend phase.</div>
         </div>
@@ -143,10 +170,10 @@ function App() {
 
       <section className="why-section" id="why-fuelos"><div className="why-copy"><span className="section-eyebrow">DESIGNED FOR OWNERS</span><h2>Less time chasing registers.<br/><span>More clarity in the day.</span></h2><p>FuelOS aims to make the operating picture easier to understand — especially for independent stations that need practical tools, not unnecessary complexity.</p><ul><li><CheckCircle2 size={18}/> A clean overview instead of scattered screens</li><li><CheckCircle2 size={18}/> Clearer shift and stock review workflows</li><li><CheckCircle2 size={18}/> Reports that help owners ask better questions</li></ul><button className="hero-primary" onClick={() => navigate('login')}>Go to owner sign in <ArrowRight size={17}/></button></div><div className="why-visual"><div className="why-big-icon"><Fuel size={44}/></div><div className="why-statement"><span>BUILT AROUND YOUR DAY</span><strong>One station.<br/>One clear view.</strong><small>ATSFY FuelOS · Product in progress</small></div><div className="why-pill"><ShieldCheck size={16}/> Owner-first by design</div></div></section>
 
-      <section className="marketing-bottom-cta"><div><span className="section-eyebrow">YOUR STATION, MORE VISIBLE</span><h2>Ready to see FuelOS in action?</h2><p>Preview the current owner dashboard, or open the sign-in screen for the upcoming owner workspace.</p></div><div className="bottom-cta-actions"><button className="hero-primary" onClick={() => navigate('login')}>Owner sign in <ArrowRight size={17}/></button><button className="hero-secondary" onClick={() => navigate('dashboard')}>Explore demo</button></div></section>
+      <section className="marketing-bottom-cta"><div><span className="section-eyebrow">YOUR STATION, MORE VISIBLE</span><h2>Ready to see FuelOS in action?</h2><p>Preview the current owner dashboard, or open the sign-in screen for the upcoming owner workspace.</p></div><div className="bottom-cta-actions"><button className="hero-primary" onClick={() => navigate('login')}>Owner sign in <ArrowRight size={17}/></button><button className="hero-secondary" onClick={() => navigate('dashboard')}>Explore demo</button><button className="hero-secondary" onClick={shareFuelOS}><ArrowRight size={16}/> Share FuelOS</button></div></section>
     </main>
 
-    <footer className="marketing-footer"><button className="marketing-brand" onClick={() => navigate('home')}><span className="marketing-brand-icon"><Fuel size={21}/></span><span className="marketing-brand-copy"><strong>ATSFY <em>FuelOS</em></strong><small>STATION OPERATIONS</small></span></button><span>© 2026 ATSFY Technologies. Product preview.</span><div><a href="mailto:atsfy@atsfy.tech">Contact ATSFY</a><button onClick={() => navigate('login')}>Owner sign in</button></div></footer>
+    <footer className="marketing-footer"><button className="marketing-brand" onClick={() => navigate('home')}><span className="marketing-brand-icon"><Fuel size={21}/></span><span className="marketing-brand-copy"><strong>ATSFY <em>FuelOS</em></strong><small>STATION OPERATIONS</small></span></button><span>© 2026 ATSFY Technologies. Product preview.</span><div><a href="mailto:atsfy@atsfy.tech">Contact ATSFY</a><button onClick={shareFuelOS}>Share FuelOS</button><button onClick={() => navigate('login')}>Owner sign in</button></div></footer>
   </div>;
 }
 
