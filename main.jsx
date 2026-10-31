@@ -328,6 +328,11 @@ function Dashboard({ onLogout }) {
         {showAlerts && <div className="dropdown alert-dropdown"><div className="dropdown-title">Notifications <span>2 new</span></div><div className="alert-row"><div className="alert-icon amber"><AlertTriangle size={16}/></div><div><strong>Stock review needed</strong><p>Diesel tank variance is flagged in sample data.</p><small>Demo alert · 10 min ago</small></div></div><div className="alert-row"><div className="alert-icon green"><ClipboardCheck size={16}/></div><div><strong>Shift handover pending</strong><p>Two active shifts need a closing entry.</p><small>Demo alert · 35 min ago</small></div></div></div>}
       </header>
 
+      <div className="demo-mode-banner" role="status">
+        <div className="demo-mode-icon"><ShieldCheck size={16}/></div>
+        <div><strong>Preview workspace</strong><span>Sample records only. Nothing here is connected to a live fuel station or backend.</span></div>
+        <span className="demo-mode-tag">LOCAL DEMO</span>
+      </div>
       <div className="page-content">
         <div className="page-heading">
           <div><div className="eyebrow"><span className="eyebrow-line"/> {currentDateLabel}</div><h1>{pageTitle}</h1><p>{pageSubtitle}</p></div>
