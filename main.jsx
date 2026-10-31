@@ -291,6 +291,7 @@ function Dashboard({ onLogout }) {
     'Reports': ['Reports & exports', 'Explore sample operating reports for your station.']
   };
   const [pageTitle, pageSubtitle] = pageTitles[active] || pageTitles.Overview;
+  const currentDateLabel = new Intl.DateTimeFormat('en-IN', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }).format(new Date()).toUpperCase();
 
   return <div className="app-shell">
     <aside className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
@@ -338,7 +339,7 @@ function Dashboard({ onLogout }) {
 
       <div className="page-content">
         <div className="page-heading">
-          <div><div className="eyebrow"><span className="eyebrow-line"/> THURSDAY, 22 OCTOBER 2026</div><h1>{pageTitle}</h1><p>{pageSubtitle}</p></div>
+          <div><div className="eyebrow"><span className="eyebrow-line"/> {currentDateLabel}</div><h1>{pageTitle}</h1><p>{pageSubtitle}</p></div>
           <div className="heading-actions"><button className="button secondary" onClick={exportCsv}><Download size={16}/> Export report</button><button className="button primary" onClick={() => setShowNewShift(true)}><Plus size={17}/> New shift</button></div>
         </div>
 
